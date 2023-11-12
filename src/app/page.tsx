@@ -1,6 +1,6 @@
 import Link from "next/link";
 import SharedSpace from "./shared-space";
-import CursorsContextProvider from "./cursors-context";
+import { RoomProvider } from "./partyworks.config";
 
 export default function Home({
   searchParams,
@@ -9,15 +9,6 @@ export default function Home({
 }) {
   // when hosted in an iframe on the partykit website, don't render link to the site
   const isPartyKitWebsite = searchParams?.host === "io";
-  const room =
-    typeof searchParams?.partyroom === "string"
-      ? searchParams.partyroom
-      : "voronoi-room";
-
-  const host =
-    typeof searchParams?.partyhost === "string"
-      ? searchParams.partyhost
-      : "voronoi-party.genmon.partykit.dev";
 
   return (
     <main className="flex flex-col gap-4 min-h-screen p-6 overflow-hidden select-none">
@@ -29,10 +20,9 @@ export default function Home({
           </Link>
         </div>
       )}
-
-      <CursorsContextProvider room={room} host={host}>
+      <RoomProvider roomId="partyworks" initialPresence={null}>
         <SharedSpace />
-      </CursorsContextProvider>
+      </RoomProvider>
     </main>
   );
 }

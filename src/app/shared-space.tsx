@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-
-import { useCursors } from "./cursors-context";
 import OtherCursor from "./other-cursor";
 import SelfCursor from "./self-cursor";
-
 import * as d3 from "d3";
 import { Delaunay } from "d3-delaunay";
+import { useMyPresence, useOthers } from "./partyworks.config";
 
 type Point = [number, number, string]; // [x, y, id]
 
@@ -15,21 +13,28 @@ function Voronoi(props: {
   svgRef: React.RefObject<SVGSVGElement>;
   windowDimensions: { width: number; height: number };
 }) {
-  const { others, self } = useCursors();
+  const others = useOthers();
+  const [myPresence] = useMyPresence();
   const [points, setPoints] = useState<Point[]>([]);
   const { svgRef, windowDimensions } = props;
   const [svgPath, setSvgPath] = useState<string>("");
 
   useEffect(() => {
+    const othersWithPresence = others.filter((other) => !!other.presence);
+
     // If there aren't any other points, put a virtual point in the center of the window so the user has something to play with
-    let points = Object.entries(others).map(
-      ([id, { x, y }]) =>
-        [x * windowDimensions.width, y * windowDimensions.height, id] as Point
-    );
-    if (self) {
+    let points = othersWithPresence.map(({ userId, presence }) => {
+      const { x, y } = presence!;
+      return [
+        x * windowDimensions.width,
+        y * windowDimensions.height,
+        userId,
+      ] as Point;
+    });
+    if (myPresence) {
       points.push([
-        self.x * windowDimensions.width,
-        self.y * windowDimensions.height,
+        myPresence.x * windowDimensions.width,
+        myPresence.y * windowDimensions.height,
         "self",
       ] as Point);
     }
@@ -41,7 +46,7 @@ function Voronoi(props: {
       ] as Point);
     }
     setPoints(points);
-  }, [others, self, windowDimensions]);
+  }, [others, myPresence, windowDimensions]);
 
   useEffect(() => {
     const svg = d3.select(svgRef.current);
@@ -61,12 +66,6 @@ function Voronoi(props: {
       windowDimensions.width,
       windowDimensions.height,
     ]);
-
-    const pattern = (i: number) => {
-      return i % 2 === 0
-        ? "url(#diagonal-stripe-1)"
-        : "url(#diagonal-stripe-4)";
-    };
 
     function stringToHash(str: string): number {
       let hash = 0;
@@ -111,7 +110,9 @@ function Voronoi(props: {
 }
 
 export default function SharedSpace() {
-  const { others, self } = useCursors();
+  const others = useOthers();
+  const [myPresence] = useMyPresence();
+
   const [windowDimensions, setWindowDimensions] = useState({
     width: 0,
     height: 0,
@@ -143,7 +144,7 @@ export default function SharedSpace() {
     };
   }, []);
 
-  const count = Object.keys(others).length + (self ? 1 : 0);
+  const count = others.length + (myPresence ? 1 : 0);
 
   return (
     <>
@@ -194,7 +195,7 @@ export default function SharedSpace() {
         </svg>
       </div>
 
-      {Object.keys(others).map((id) => (
+      {others.map(({ userId: id }) => (
         <div key={id}>
           <OtherCursor
             id={id}
@@ -203,9 +204,7 @@ export default function SharedSpace() {
           />
         </div>
       ))}
-      {self?.pointer === "touch" && (
-        <SelfCursor windowDimensions={windowDimensions} />
-      )}
+      <SelfCursor windowDimensions={windowDimensions} />
     </>
   );
 }
