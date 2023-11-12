@@ -1,4 +1,4 @@
-# sketch-voronoi
+# sketch-voronoi on Partyworks
 
 This Voronoi diagram is responsive to multiplayer cursors, and can be found at [multicursor-sketch.vercel.app](https://multicursor-sketch.vercel.app).
 
